@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Rencana Blok - Personal Portfolio Peta Interaktif</title>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1f2b;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Inter', sans-serif;
+        }
+
+        *:focus {
+            outline: none;
+        }
+
+        .portfolio-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #f1f5f9;
+        }
+
+        /* Custom Label Style */
+        .leaflet-label {
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.3);
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 500;
+        }
+        
+        .leaflet-label:before {
+            border-right: 6px solid rgba(0, 0, 0, 0.75);
+        }
+
+        /* ========= SIDEBAR KIRI ========= */
+        .sidebar-scroll {
+            width: 320px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            height: 100vh;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.03);
+            z-index: 5;
+            transition: transform 0.3s ease;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: #1e2a3e;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: #2c6e9e;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: #eef2f6;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #b9c3cf;
+            border-radius: 10px;
+        }
+
+        .sidebar-inner {
+            padding: 1.5rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.8rem;
+        }
+
+        .portfolio-header {
+            background: #1e2a3e;
+            margin: -1.5rem -1.2rem 0 -1.2rem;
+            padding: 1.2rem 1.2rem;
+            color: white;
+            border-radius: 0;
+        }
+        .portfolio-header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .portfolio-header p {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 6px;
+        }
+        .badge-portfolio {
+            background: #3b5e7a;
+            padding: 4px 10px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .search-section {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 0.8rem 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 60px;
+            padding: 0.45rem 1rem;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .search-box input {
+            border: none;
+            flex: 1;
+            outline: none;
+            font-size: 0.85rem;
+            background: transparent;
+            min-width: 120px;
+        }
+        .search-box button {
+            background: #1e2a3e;
+            border: none;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .search-box button:hover {
+            background: #0f1a24;
+        }
+        .coordinate-hint {
+            font-size: 0.65rem;
+            color: #475569;
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid #2c6e9e;
+            padding-left: 10px;
+        }
+        .btn-reset {
+            background: none;
+            border: none;
+            color: #2c6e9e;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .layer-control {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 8px;
+            margin: 4px 0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        .layer-item:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        .layer-item.active {
+            background: #e0f2fe;
+            border-color: #2c6e9e;
+        }
+        .layer-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        .layer-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .layer-text {
+            flex: 1;
+        }
+        .layer-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1e293b;
+        }
+        .layer-count {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 24px;
+            position: relative;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .toggle-switch.active {
+            background: #2c6e9e;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.2s;
+        }
+        .toggle-switch.active::after {
+            left: 22px;
+        }
+
+        .legend-container {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 0.8rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            font-size: 0.75rem;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .legend-item:hover {
+            background: #f1f5f9;
+        }
+        .legend-color {
+            width: 30px;
+            height: 18px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .legend-text {
+            flex: 1;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .legend-count {
+            font-size: 0.65rem;
+            color: #64748b;
+        }
+        .legend-highlight-item {
+            border-top: 1px solid #e2e8f0;
+            margin-top: 8px;
+            padding-top: 8px;
+        }
+        .legend-highlight {
+            width: 30px;
+            height: 18px;
+            border-radius: 4px;
+            background: #ffaa00;
+            border: 2px solid #ff6600;
+        }
+
+        .label-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        .label-toggle-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .label-toggle-switch {
+            width: 40px;
+            height: 20px;
+            background: #cbd5e1;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .label-toggle-switch.active {
+            background: #2c6e9e;
+        }
+        .label-toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.2s;
+        }
+        .label-toggle-switch.active::after {
+            left: 22px;
+        }
+
+        .map-area {
+            flex: 1;
+            position: relative;
+            height: 100vh;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+        .leaflet-container {
+            cursor: crosshair;
+        }
+        .leaflet-interactive:focus {
+            outline: none;
+        }
+
+        .basemap-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            padding: 6px 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .basemap-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #1e293b;
+        }
+        .basemap-btn i {
+            font-size: 0.8rem;
+        }
+        .basemap-btn.active {
+            background: #1e2a3e;
+            color: white;
+        }
+        .basemap-btn:hover:not(.active) {
+            background: #e2e8f0;
+        }
+
+        .map-coordinates-bar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            padding: 5px 12px;
+            border-radius: 40px;
+            color: white;
+            font-family: monospace;
+            font-size: 0.7rem;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .active-layer-info {
+            font-size: 0.7rem;
+            background: #e9f3fb;
+            border-radius: 20px;
+            padding: 5px 10px;
+            text-align: center;
+            margin-top: 12px;
+            color: #2c5282;
+        }
+
+        .sidebar-footer {
+            margin-top: 1rem;
+            font-size: 0.6rem;
+            text-align: center;
+            color: #6c7a91;
+            border-top: 1px solid #eef2f6;
+            padding-top: 1rem;
+        }
+        
+        /* Search result highlight style */
+        .search-highlight {
+            color: #ffaa00;
+            font-weight: bold;
+            text-shadow: 0 0 1px black;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+            .sidebar-scroll {
+                position: fixed;
+                left: 0;
+                top: 0;
+                transform: translateX(-100%);
+                width: 85%;
+                max-width: 300px;
+                z-index: 1000;
+                box-shadow: 2px 0 20px rgba(0,0,0,0.2);
+            }
+            .sidebar-scroll.open {
+                transform: translateX(0);
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.open {
+                display: block;
+            }
+            .basemap-btn span {
+                display: none;
+            }
+            .basemap-btn {
+                padding: 6px 10px;
+            }
+            .basemap-control {
+                top: 10px;
+                right: 10px;
+                padding: 4px 8px;
+            }
+            .map-coordinates-bar {
+                bottom: 10px;
+                right: 10px;
+                font-size: 0.6rem;
+                padding: 3px 8px;
+            }
+            .legend-container {
+                max-height: 200px;
+            }
+            .leaflet-label {
+                font-size: 9px;
+                padding: 2px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="mobile-menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="overlay" id="overlay"></div>
+
+<div class="portfolio-container">
+    <div class="sidebar-scroll" id="sidebar">
+        <div class="sidebar-inner">
+            <div class="portfolio-header">
+                <h1><i class="fas fa-draw-polygon"></i> RENCANA BLOK</h1>
+                <p>Calon Lokasi Penanaman Rehabilitasi DAS</p>
+                <div class="badge-portfolio">
+                    <i class="fas fa-map-marked-alt"></i> Interaktif | Label KODE & LUAS
+                </div>
+            </div>
+
+            <div class="search-section">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchLocation" placeholder="Cari lokasi, atau BLOK, PKTMKH, SK_RDAS...">
+                    <button id="searchBtn"><i class="fas fa-location-dot"></i> Cari</button>
+                </div>
+                <div class="coordinate-hint">
+                    <i class="fas fa-map-pin"></i> Contoh: Yogyakarta, BLOK-01, Hutan Lindung, atau SK.2020
+                </div>
+            </div>
+
+            <div>
+                <div class="panel-title">
+                    <span><i class="fas fa-layer-group"></i> Layer Control</span>
+                    <button id="resetViewBtn" class="btn-reset"><i class="fas fa-globe-asia"></i> Reset</button>
+                </div>
+                <div class="layer-control" id="layerControl"></div>
+                
+                <!-- Label Toggle Control -->
+                <div class="label-toggle">
+                    <span class="label-toggle-text"><i class="fas fa-tag"></i> Tampilkan Label (KODE | LUAS)</span>
+                    <div class="label-toggle-switch active" id="labelToggle"></div>
+                </div>
+                
+                <div id="layerStatus" class="active-layer-info">
+                    <i class="fas fa-spinner fa-pulse"></i> Memuat data blok perencanaan...
+                </div>
+            </div>
+
+            <div>
+                <div class="panel-title">
+                    Legenda <i class="fas fa-legend"></i> 
+                </div>
+                <div class="legend-container" id="legendContainer">
+                    <div style="text-align:center; padding:10px;">
+                        <i class="fas fa-spinner fa-pulse"></i> Memuat legenda...
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <i class="fas fa-copyright"></i> Masterplan | Klik polygon untuk highlight | Cari berdasarkan atribut
+            </div>
+        </div>
+    </div>
+
+    <div class="map-area">
+        <div id="map"></div>
+        <div class="basemap-control">
+            <button data-basemap="satellite" class="basemap-btn"><i class="fas fa-satellite"></i><span> Satelit</span></button>
+            <button data-basemap="osm" class="basemap-btn"><i class="fas fa-map"></i><span> OSM</span></button>
+            <button data-basemap="dark" class="basemap-btn"><i class="fas fa-moon"></i><span> Dark</span></button>
+            <button data-basemap="light" class="basemap-btn active"><i class="fas fa-sun"></i><span> Light</span></button>
+        </div>
+        <div class="map-coordinates-bar" id="coordDisplay">
+            Lat: -2.98  Lng: 115.13  Zoom: 7
+        </div>
+    </div>
+</div>
+
+<script>
+    // Inisialisasi Peta
+    const defaultCenter = [-2.0, 117.0];
+    const defaultZoom = 5;
+
+    const map = L.map('map', {
+        keyboard: true,
+        zoomControl: true
+    }).setView(defaultCenter, defaultZoom);
+    
+    map.on('click', function(e) {
+        if (window.currentHighlightLayer) {
+            map.removeLayer(window.currentHighlightLayer);
+            window.currentHighlightLayer = null;
+        }
+        map.closePopup();
+        
+        // Hilangkan highlight dari daftar hasil pencarian juga
+        if (window.lastSearchHighlight) {
+            window.lastSearchHighlight.forEach(layer => {
+                if (map.hasLayer(layer)) map.removeLayer(layer);
+            });
+            window.lastSearchHighlight = [];
+        }
+    });
+
+    // Basemap layers
+    const basemaps = {
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }),
+        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & CartoDB',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }),
+        light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & CartoDB',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }),
+        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 18
+        })
+    };
+    
+    basemaps.light.addTo(map);
+    
+    function switchBasemap(basemapId) {
+        Object.values(basemaps).forEach(layer => {
+            if (map.hasLayer(layer)) map.removeLayer(layer);
+        });
+        basemaps[basemapId].addTo(map);
+        document.querySelectorAll('.basemap-btn').forEach(btn => {
+            if (btn.dataset.basemap === basemapId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+    
+    document.querySelectorAll('.basemap-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchBasemap(btn.dataset.basemap));
+    });
+    
+    map.on('mousemove', function(e) {
+        document.getElementById('coordDisplay').innerHTML = `Lat: ${e.latlng.lat.toFixed(5)}  Lng: ${e.latlng.lng.toFixed(5)}  Zoom: ${map.getZoom()}`;
+    });
+    
+    document.getElementById('resetViewBtn').addEventListener('click', function() {
+        map.setView(defaultCenter, defaultZoom);
+        if (window.currentHighlightLayer) {
+            map.removeLayer(window.currentHighlightLayer);
+            window.currentHighlightLayer = null;
+        }
+        if (window.lastSearchHighlight) {
+            window.lastSearchHighlight.forEach(layer => {
+                if (map.hasLayer(layer)) map.removeLayer(layer);
+            });
+            window.lastSearchHighlight = [];
+        }
+        map.closePopup();
+        closeMobileSidebar();
+    });
+    
+    // Fungsi pencarian GEoJSON (atribut)
+    let geoJsonData = null; // simpan data features
+    let layerRefs = []; // simpan referensi setiap layer beserta feature-nya
+    
+    // Mobile menu
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menuToggle');
+    const overlay = document.getElementById('overlay');
+    
+    function openMobileSidebar() {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeMobileSidebar() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+    
+    menuToggle.addEventListener('click', openMobileSidebar);
+    overlay.addEventListener('click', closeMobileSidebar);
+    
+    let geoJsonLayer = null;
+    let layerVisible = true;
+    let currentHighlightLayer = null;
+    let labelsVisible = true;
+    let allLabels = [];
+    
+    function getColorFromString(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash % 360);
+        return `hsl(${hue}, 65%, 55%)`;
+    }
+    
+    let pktmhkColors = new Map();
+    
+    function getFeatureColor(feature) {
+        const pktmkh = feature.properties?.PKTMKH || 'Tidak diketahui';
+        if (!pktmhkColors.has(pktmkh)) {
+            pktmhkColors.set(pktmkh, getColorFromString(pktmkh));
+        }
+        return pktmhkColors.get(pktmkh);
+    }
+    
+    function createLabel(feature, layer) {
+        if (!feature.properties) return null;
+        const blok = feature.properties.BLOK || '-';
+        const luas = feature.properties.Luas ? feature.properties.Luas.toFixed(2) : '-';
+        const labelText = `${blok} | ${luas} ha`;
+        const center = layer.getBounds().getCenter();
+        const labelDiv = L.divIcon({
+            className: 'custom-polygon-label',
+            html: `<div style="background: rgba(0,0,0,0.75); color: white; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); white-space: nowrap; font-family: monospace; box-shadow: 0 1px 3px rgba(0,0,0,0.3); pointer-events: none;">${labelText}</div>`,
+            iconSize: [100, 20],
+            iconAnchor: [50, 10]
+        });
+        return L.marker(center, { icon: labelDiv, interactive: false, zIndexOffset: 1000 });
+    }
+    
+    function updateLabelsVisibility() {
+        allLabels.forEach(label => {
+            if (labelsVisible && layerVisible) {
+                map.addLayer(label);
+            } else {
+                map.removeLayer(label);
+            }
+        });
+    }
+    
+    function buildLegend(features) {
+        const legendContainer = document.getElementById('legendContainer');
+        const pktmhkMap = new Map();
+        features.forEach(feature => {
+            const pktmkh = feature.properties?.PKTMKH || 'Tidak diketahui';
+            if (!pktmhkMap.has(pktmkh)) {
+                pktmhkMap.set(pktmkh, { count: 0, color: getColorFromString(pktmkh) });
+            }
+            pktmhkMap.get(pktmkh).count++;
+        });
+        const sorted = Array.from(pktmhkMap.entries()).sort((a, b) => b[1].count - a[1].count);
+        let legendHtml = '';
+        sorted.forEach(([name, data]) => {
+            legendHtml += `<div class="legend-item"><div class="legend-color" style="background: ${data.color};"></div><div class="legend-text">${name.length > 30 ? name.substring(0, 27) + '...' : name}</div><div class="legend-count">${data.count} blok</div></div>`;
+        });
+        legendHtml += `<div class="legend-highlight-item"><div class="legend-item"><div class="legend-highlight"></div><div class="legend-text"><strong>Polygon Terpilih</strong></div><div class="legend-count">(Klik polygon)</div></div><div class="legend-item"><div style="width:30px;height:18px;background:rgba(0,0,0,0.75);border-radius:4px;"></div><div class="legend-text"><strong>Label Polygon</strong></div><div class="legend-count">(KODE | LUAS)</div></div></div>`;
+        legendContainer.innerHTML = legendHtml;
+    }
+    
+    function addPolygonClickHandler(feature, layer) {
+        layer.on('click', function(e) {
+            L.DomEvent.stopPropagation(e);
+            if (window.currentHighlightLayer) map.removeLayer(window.currentHighlightLayer);
+            const highlightStyle = { color: '#ffaa00', weight: 5, fillColor: '#ffcc44', fillOpacity: 0.7, opacity: 1 };
+            window.currentHighlightLayer = L.geoJSON(feature.geometry, { style: highlightStyle, interactive: false }).addTo(map);
+            if (feature.properties && layer.getPopup()) layer.openPopup();
+            closeMobileSidebar();
+        });
+    }
+    
+    // Fungsi utama search berdasarkan atribut GeoJSON
+    function searchInGeoJSON(queryText) {
+        if (!geoJsonData || !geoJsonData.features || !layerRefs.length) {
+            alert('Data GeoJSON belum dimuat. Tunggu sebentar.');
+            return false;
+        }
+        const lowerQuery = queryText.toLowerCase().trim();
+        if (lowerQuery === "") return false;
+        
+        // Hapus highlight sebelumnya
+        if (window.lastSearchHighlight) {
+            window.lastSearchHighlight.forEach(layer => map.removeLayer(layer));
+            window.lastSearchHighlight = [];
+        }
+        
+        const results = [];
+        layerRefs.forEach(item => {
+            const props = item.feature.properties;
+            if (!props) return;
+            const matchFields = ['BLOK', 'PKTMKH', 'SK_RDAS', 'PBPH_PELEP', 'TGL_SK'];
+            let isMatch = false;
+            if (props.Luas && props.Luas.toString().includes(lowerQuery)) isMatch = true;
+            for (let field of matchFields) {
+                if (props[field] && props[field].toString().toLowerCase().includes(lowerQuery)) {
+                    isMatch = true;
+                    break;
+                }
+            }
+            if (isMatch) {
+                results.push(item);
+            }
+        });
+        
+        if (results.length === 0) {
+            alert(`Tidak ditemukan data yang cocok dengan: "${queryText}"`);
+            return false;
+        }
+        
+        // Highlight semua hasil
+        const highlightGroup = [];
+        results.forEach(res => {
+            const highlightStyle = { color: '#ff5500', weight: 4, fillColor: '#ffaa66', fillOpacity: 0.6, opacity: 1, dashArray: '4' };
+            const highlightLayer = L.geoJSON(res.feature.geometry, { style: highlightStyle, interactive: false });
+            highlightLayer.addTo(map);
+            highlightGroup.push(highlightLayer);
+        });
+        window.lastSearchHighlight = highlightGroup;
+        
+        // Zoom ke bounds seluruh hasil
+        const groupBounds = L.featureGroup(highlightGroup.map(l => l));
+        if (groupBounds.getBounds().isValid()) {
+            map.fitBounds(groupBounds.getBounds(), { padding: [30, 30] });
+        }
+        
+        // Tampilkan info ringkas
+        let infoMsg = `Ditemukan ${results.length} blok.<br>`;
+        results.slice(0, 5).forEach(r => {
+            const p = r.feature.properties;
+            infoMsg += `• ${p.BLOK || '-'} (${p.PKTMKH || '-'}) Luas: ${p.Luas ? p.Luas.toFixed(2)+' ha' : '-'}<br>`;
+        });
+        if (results.length > 5) infoMsg += `...dan ${results.length-5} lainnya.`;
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = `<div style="max-height:200px; overflow-y:auto;">${infoMsg}</div>`;
+        const popupContent = tempDiv;
+        map.openPopup(popupContent, map.getCenter());
+        
+        closeMobileSidebar();
+        return true;
+    }
+    
+    // Load GeoJSON
+    fetch('geojson/rencana1.geojson')
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            console.log("GeoJSON loaded!", data.features.length, "features");
+            geoJsonData = data;
+            if (!data.features || data.features.length === 0) throw new Error("GeoJSON no features");
+            buildLegend(data.features);
+            
+            geoJsonLayer = L.geoJSON(data, {
+                style: function(feature) { return { color: getFeatureColor(feature), weight: 2, fillColor: getFeatureColor(feature), fillOpacity: 0.5, opacity: 0.8 }; },
+                onEachFeature: function(feature, layer) {
+                    if (feature.properties) {
+                        const props = feature.properties;
+                        const popupContent = `<div style="min-width: 200px;"><b>${props.PKTMKH || 'Tidak diketahui'}</b><hr/><b>Kode Blok:</b> ${props.BLOK || '-'}<br/><b>Luas:</b> ${props.Luas ? props.Luas.toFixed(2) + ' ha' : '-'}<br/><b>SK RDAS:</b> ${props.SK_RDAS || '-'}<br/><b>Tanggal SK:</b> ${props.TGL_SK || '-'}<br/><b>PBPH Pelep:</b> ${props.PBPH_PELEP || '-'}</div>`;
+                        layer.bindPopup(popupContent);
+                        layer.bindTooltip(`${props.BLOK || 'Blok'} - ${props.PKTMKH || ''}`, { sticky: true });
+                        addPolygonClickHandler(feature, layer);
+                        const label = createLabel(feature, layer);
+                        if (label) {
+                            allLabels.push(label);
+                            if (labelsVisible && layerVisible) label.addTo(map);
+                        }
+                        layerRefs.push({ layer, feature });
+                    }
+                }
+            }).addTo(map);
+            
+            const bounds = geoJsonLayer.getBounds();
+            if (bounds.isValid()) map.fitBounds(bounds);
+            
+            const layerControlDiv = document.getElementById('layerControl');
+            const featureCount = data.features.length;
+            layerControlDiv.innerHTML = `<div class="layer-item active" data-layer="rencanaBlok" id="layerToggleItem"><div class="layer-info"><div class="layer-icon"><i class="fas fa-draw-polygon"></i></div><div class="layer-text"><div class="layer-name">Rencana Blok Perencanaan</div><div class="layer-count">${featureCount} polygon</div></div></div><div class="toggle-switch active" id="layerToggle"></div></div>`;
+            const toggleSwitch = document.getElementById('layerToggle');
+            const layerItem = document.getElementById('layerToggleItem');
+            toggleSwitch.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (layerVisible) {
+                    map.removeLayer(geoJsonLayer);
+                    layerVisible = false;
+                    toggleSwitch.classList.remove('active');
+                    layerItem.classList.remove('active');
+                    document.getElementById('layerStatus').innerHTML = '<i class="fas fa-eye-slash"></i> Layer blok disembunyikan';
+                    updateLabelsVisibility();
+                    if (window.currentHighlightLayer) map.removeLayer(window.currentHighlightLayer);
+                    if (window.lastSearchHighlight) { window.lastSearchHighlight.forEach(l => map.removeLayer(l)); window.lastSearchHighlight = []; }
+                } else {
+                    geoJsonLayer.addTo(map);
+                    layerVisible = true;
+                    toggleSwitch.classList.add('active');
+                    layerItem.classList.add('active');
+                    document.getElementById('layerStatus').innerHTML = `<i class="fas fa-check-circle"></i> ${featureCount} blok perencanaan ditampilkan | Klik polygon untuk highlight, klik di luar untuk menghilangkan highlight`;
+                    updateLabelsVisibility();
+                }
+            });
+            const labelToggleSwitch = document.getElementById('labelToggle');
+            labelToggleSwitch.addEventListener('click', function() {
+                labelsVisible = !labelsVisible;
+                if (labelsVisible) labelToggleSwitch.classList.add('active');
+                else labelToggleSwitch.classList.remove('active');
+                updateLabelsVisibility();
+            });
+            document.getElementById('layerStatus').innerHTML = `<i class="fas fa-check-circle"></i> ${featureCount} blok dimuat | Fitur pencarian atribut aktif (BLOK, Luas, PKTMKH, SK_RDAS, dll)`;
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            document.getElementById('layerStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Gagal memuat data blok. Pastikan file geojson/rencana1.geojson ada!';
+            document.getElementById('layerControl').innerHTML = '<div style="text-align:center;padding:10px;color:#cbd5e1;"><i class="fas fa-database"></i> Data layer tidak tersedia</div>';
+            document.getElementById('legendContainer').innerHTML = '<div style="text-align:center;padding:10px;color:#cbd5e1;"><i class="fas fa-exclamation-triangle"></i> Tidak dapat memuat legenda</div>';
+        });
+    
+    // Event pencarian: prioritas cek dulu ke GeoJSON, lalu ke Nominatim
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        const query = document.getElementById('searchLocation').value.trim();
+        if (!query) return;
+        
+        const coordMatch = query.match(/^(-?\d+(?:\.\d+)?)[\s,]+(-?\d+(?:\.\d+)?)$/);
+        if (coordMatch) {
+            const lat = parseFloat(coordMatch[1]);
+            const lng = parseFloat(coordMatch[2]);
+            if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+                map.setView([lat, lng], 12);
+                closeMobileSidebar();
+                return;
+            }
+        }
+        
+        // Cari di GeoJSON terlebih dahulu
+        const foundInGeo = searchInGeoJSON(query);
+        if (foundInGeo) {
+            closeMobileSidebar();
+            return;
+        }
+        
+        // Jika tidak ditemukan di GeoJSON, cari lokasi geografis via Nominatim
+        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    map.setView([lat, lon], 12);
+                    closeMobileSidebar();
+                } else {
+                    alert(`Tidak ditemukan lokasi geografis maupun data blok dengan kata: "${query}"`);
+                }
+            })
+            .catch(() => alert('Gagal mencari lokasi. Coba kata kunci lain.'));
+    });
+    
+    const styleElem = document.createElement('style');
+    styleElem.textContent = `.leaflet-interactive:focus { outline: none !important; } .leaflet-container:focus { outline: none !important; } .custom-polygon-label { pointer-events: none !important; }`;
+    document.head.appendChild(styleElem);
+</script>
+</body>
+</html>
